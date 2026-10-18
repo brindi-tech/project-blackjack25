@@ -3,6 +3,13 @@
 /**
  * Class that represents the Blackjack game.
  */
+class Card {
+    constructor(suit, value) {
+        this.suit = suit;   // 0–3
+        this.value = value; // 1–13
+    }
+}
+
 class Blackjack {
     // Constant that defines the maximum points to avoid busting in Blackjack
     static MAX_POINTS = 25;
@@ -35,9 +42,22 @@ class Blackjack {
      * Creates a new deck of cards.
      * @returns {Card[]} - An array of cards.
      */
-    newDeck() {
+    
 
+    newDeck() {
+        const deck = [];
+        const suits = [0, 1, 2, 3]; // 4 naipes
+
+        for (let s of suits) {
+            for (let v = 1; v <= 13; v++) {
+                deck.push(new Card(s, v));
+            }
+        }
+        return deck;
     }
+
+
+
 
     //TODO: Implement this method
     /**
@@ -46,8 +66,13 @@ class Blackjack {
      * @returns {Card[]} - The shuffled deck.
      */
     shuffle(deck) {
-
+        for (let i = deck.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [deck[i], deck[j]] = [deck[j], deck[i]];
+        }
+        return deck;
     }
+
 
     /**
      * Returns the dealer's cards.
@@ -80,17 +105,45 @@ class Blackjack {
      * @returns {number} - The total value of the cards.
      */
     getCardsValue(cards) {
+        let total = 0;
+        let aces = 0;
 
+        for (let c of cards) {
+            if (c.value === 1) {
+                aces++;
+                total += 1; 
+            } else if (c.value >= 11 && c.value <= 13) {
+                total += 10;
+            } else {
+                total += c.value;
+            }
+        }
+
+        // tenta transformar Ás de 1 → 11
+        while (aces > 0 && total + 10 <= Blackjack.MAX_POINTS) {
+            total += 10;
+            aces--;
+        }
+
+        return total;
     }
+    
+
 
     //TODO: Implement this method
     /**
      * Executes the dealer's move by adding a card to the dealer's array.
      * @returns {Object} - The game state after the dealer's move.
      */
-    dealerMove() {
 
+
+    dealerMove() {
+        const card = this.deck.pop();   // tira carta do topo
+        this.dealerCards.push(card);    // adiciona ao dealer
+        return this.getGameState();
     }
+
+
 
     //TODO: Implement this method
     /**
@@ -98,8 +151,11 @@ class Blackjack {
      * @returns {Object} - The game state after the player's move.
      */
     playerMove() {
-
+        const card = this.deck.pop();   // tira carta do topo
+        this.playerCards.push(card);    // adiciona ao jogador
+        return this.getGameState();
     }
+
 
     //TODO: Implement this method
     /**
@@ -107,6 +163,64 @@ class Blackjack {
      * @returns {Object} - The updated game state.
      */
     getGameState() {
+        const playerPoints = this.getCardsValue(this.playerCards);
+        const dealerPoints = this.getCardsValue(this.dealerCards);
 
+        // reset
+        this.state.gameEnded = false;
+        this.state.playerWon = false;
+        this.state.dealerWon = false;
+        this.state.playerBusted = false;
+        this.state.dealerBusted = false;
+
+        // 1) Jogador faz 25 → vitória imediata
+        if (playerPoints === Blackjack.MAX_POINTS) {
+            this.state.gameEnded = true;
+            this.state.playerWon = true;
+            return this.state;
+        }
+
+        // 2) Jogador rebenta
+        if (playerPoints > Blackjack.MAX_POINTS) {
+            this.state.gameEnded = true;
+            this.state.playerBusted = true;
+            this.state.dealerWon = true;
+            return this.state;
+        }
+
+        // Se ainda é turno do jogador → não avaliar dealer
+        if (!this.dealerTurn) {
+            return this.state;
+        }
+
+        // 3) Dealer rebenta
+        if (dealerPoints > Blackjack.MAX_POINTS) {
+            this.state.gameEnded = true;
+            this.state.dealerBusted = true;
+            this.state.playerWon = true;
+            return this.state;
+        }
+
+        // 4) Dealer atinge >= 21 → parar
+        if (dealerPoints >= Blackjack.DEALER_MAX_TURN_POINTS) {
+
+            this.state.gameEnded = true;
+
+            if (dealerPoints > playerPoints) {
+                this.state.dealerWon = true;
+            } else if (dealerPoints < playerPoints) {
+                this.state.playerWon = true;
+            } else {
+                // 5) Empate
+                this.state.playerWon = false;
+                this.state.dealerWon = false;
+            }
+
+            return this.state;
+        }
+
+        return this.state;
     }
+
+    
 }
