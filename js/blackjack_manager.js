@@ -1,6 +1,7 @@
 // Blackjack OOP
 
 let game = null; // Stores the current instance of the game
+let currentGameCounted = false;
 
 /**
  * Function to debug and display the state of the game object.
@@ -38,6 +39,8 @@ function clearPage() {
     document.getElementById('dealer').innerHTML = "";
     document.getElementById('player').innerHTML = "";
     document.getElementById('game_status').innerHTML = "";
+    document.getElementById('dealer_total').textContent = "0";
+    document.getElementById('player_total').textContent = "0";
 }
 
 
@@ -49,6 +52,7 @@ function newGame() {
     clearPage();
 
     game = new Blackjack();
+    currentGameCounted = false;
     buttonsInitialization();
     debug(game);
 
@@ -90,6 +94,10 @@ function finalScore(state) {
     }
 
     document.getElementById('game_status').innerHTML = msg;
+    if (!currentGameCounted) {
+        updateStats(state);
+        currentGameCounted = true;
+    }
 }
 
 
@@ -114,9 +122,17 @@ function updateDealer(state) {
             img.src = BACK_CARD; // carta virada
             img.classList.add("carta");
             dealerElem.appendChild(img);
+            const visibleCards = cards.filter((_, index) => index !== 1);
+            document.getElementById('dealer_total').textContent =
+                `${game.getCardsValue(visibleCards)} + ?`;
         } else {
             printCard(dealerElem, cards[1]);
+            document.getElementById('dealer_total').textContent =
+                game.getCardsValue(cards);
         }
+    } else {
+        document.getElementById('dealer_total').textContent =
+            game.getCardsValue(cards);
     }
 
     // restantes cartas (se houver)
@@ -146,6 +162,8 @@ function updatePlayer(state) {
     for (let c of cards) {
         printCard(playerElem, c);
     }
+    document.getElementById('player_total').textContent =
+        game.getCardsValue(cards);
 
     if (state.gameEnded) {
         finalizeButtons();
@@ -193,6 +211,30 @@ function dealerFinish() {
         state = dealerNewCard();
     }
 }
+let stats = {
+    wins: 0,
+    losses: 0,
+    draws: 0,
+    total: 0
+};
+
+function updateStats(state) {
+    stats.total++;
+
+    if (state.playerWon) {
+        stats.wins++;
+    } else if (state.dealerWon) {
+        stats.losses++;
+    } else {
+        stats.draws++;
+    }
+
+    document.getElementById("wins").textContent = stats.wins;
+    document.getElementById("losses").textContent = stats.losses;
+    document.getElementById("draws").textContent = stats.draws;
+    document.getElementById("total").textContent = stats.total;
+}
+
 
 
 //TODO: Implement this method.
@@ -239,9 +281,3 @@ function printCard(element, card, replace = false) {
 
     element.appendChild(img);
 }
-
-
-
-
-
-
