@@ -34,10 +34,10 @@
   <main class="container">
     <!-- Main game section -->
     <section id="game">
-      <h2>Dealer</h2> <!-- Subheading for the dealer's section -->
+      <h2>Dealer <small class="score">Points: <span id="dealer_total">0</span></small></h2>
       <p id="dealer"></p> <!-- Placeholder for displaying dealer's cards -->
 
-      <h2>Player</h2> <!-- Subheading for the player's section -->
+      <h2>Player <small class="score">Points: <span id="player_total">0</span></small></h2>
       <p id="player"></p> <!-- Placeholder for displaying player's cards -->
 
       <!-- Button for the player to draw a new card -->
@@ -54,8 +54,16 @@
     <section id="game_status">
       <!-- This will be populated dynamically during the game -->
     </section>
-
-    <!-- Debugging section for developers to view game state -->
+    <section id="stats_section" class="mt-4">
+      <h2>Estatísticas</h2>
+      <div id="stats" class="small">
+        <p><strong>Vitórias:</strong> <span id="wins">0</span></p>
+        <p><strong>Derrotas:</strong> <span id="losses">0</span></p>
+        <p><strong>Empates:</strong> <span id="draws">0</span></p>
+        <p><strong>Total de Partidas:</strong> <span id="total">0</span></p>
+      </div>
+    </section>
+      <!-- Debugging section for developers to view game state -->
     <section id="sec_debug">
       <h2>Debug</h2> <!-- Subheading for the debug section -->
       <p id="debug">
