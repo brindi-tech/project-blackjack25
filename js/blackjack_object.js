@@ -19,7 +19,13 @@ class Blackjack {
     /**
      * Creates an instance of Blackjack and initializes the deck.
      */
-    constructor() {
+    constructor(version = Blackjack.MAX_POINTS) {
+        if (version !== 21 && version !== Blackjack.MAX_POINTS) {
+            throw new RangeError("A versão deve ser Blackjack 21 ou Blackjack 25.");
+        }
+
+        this.maxPoints = version;
+        this.dealerMaxTurnPoints = version === 21 ? 17 : Blackjack.DEALER_MAX_TURN_POINTS;
         this.dealerCards = []; // Array to hold the dealer's cards
         this.playerCards = []; // Array to hold the player's cards
         this.dealerTurn = false; // Flag to indicate if it's the dealer's turn to play
@@ -30,7 +36,8 @@ class Blackjack {
             playerWon: false, // Indicates if the player has won
             dealerWon: false, // Indicates if the dealer has won
             playerBusted: false, // Indicates if the player has exceeded MAX_POINTS
-            dealerBusted: false // Indicates if the dealer has exceeded MAX_POINTS
+            dealerBusted: false, // Indicates if the dealer has exceeded MAX_POINTS
+            naturalBlackjack: false
         };
 
         // Initialize the deck of cards
@@ -120,7 +127,7 @@ class Blackjack {
         }
 
         // tenta transformar Ás de 1 → 11
-        while (aces > 0 && total + 10 <= Blackjack.MAX_POINTS) {
+        while (aces > 0 && total + 10 <= this.maxPoints) {
             total += 10;
             aces--;
         }
@@ -171,16 +178,19 @@ class Blackjack {
         this.state.dealerWon = false;
         this.state.playerBusted = false;
         this.state.dealerBusted = false;
+        this.state.naturalBlackjack = false;
 
-        // 1) Jogador faz 25 → vitória imediata
-        if (playerPoints === Blackjack.MAX_POINTS) {
+        // Reaching the selected target wins immediately.
+        if (playerPoints === this.maxPoints) {
             this.state.gameEnded = true;
             this.state.playerWon = true;
+            this.state.naturalBlackjack =
+                this.maxPoints === 21 && this.playerCards.length === 2;
             return this.state;
         }
 
         // 2) Jogador rebenta
-        if (playerPoints > Blackjack.MAX_POINTS) {
+        if (playerPoints > this.maxPoints) {
             this.state.gameEnded = true;
             this.state.playerBusted = true;
             this.state.dealerWon = true;
@@ -193,15 +203,15 @@ class Blackjack {
         }
 
         // 3) Dealer rebenta
-        if (dealerPoints > Blackjack.MAX_POINTS) {
+        if (dealerPoints > this.maxPoints) {
             this.state.gameEnded = true;
             this.state.dealerBusted = true;
             this.state.playerWon = true;
             return this.state;
         }
 
-        // 4) Dealer atinge >= 21 → parar
-        if (dealerPoints >= Blackjack.DEALER_MAX_TURN_POINTS) {
+        // Dealer stands at the threshold for the selected version.
+        if (dealerPoints >= this.dealerMaxTurnPoints) {
 
             this.state.gameEnded = true;
 
