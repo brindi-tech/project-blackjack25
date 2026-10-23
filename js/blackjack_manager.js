@@ -2,33 +2,83 @@
 
 let game = null; // Stores the current instance of the game
 let currentGameCounted = false;
+let playerTurnActive = false;
+const INITIAL_BALANCE = 1000;
+const currencyFormatter = new Intl.NumberFormat("pt-PT", {
+    style: "currency",
+    currency: "EUR"
+});
+let balance = INITIAL_BALANCE;
+let currentBet = 0;
 
-/**
- * Function to debug and display the state of the game object.
- * @param {Object} obj - The object to be debugged.
- */
-function debug(obj) {
-    document.getElementById('debug').innerHTML = JSON.stringify(obj); // Displays the state of the object as JSON
+function updateBalance() {
+    document.getElementById("balance").textContent =
+        currencyFormatter.format(balance);
+    document.getElementById("bet").max = String(balance);
+}
+
+function setBetEnabled(enabled) {
+    document.getElementById("bet").disabled = !enabled;
+}
+
+function initializeGamePage() {
+    clearPage();
+    updateBalance();
+
+    const version = Number(document.getElementById("blackjack_version").value);
+    document.getElementById("game_title").textContent = `Blackjack ${version}`;
+    document.getElementById("card").disabled = true;
+    document.getElementById("stand").disabled = true;
+    document.getElementById("new_game").disabled = false;
+    document.getElementById("new_game").textContent = "Start Game";
+    document.getElementById("blackjack_version").disabled = false;
+    setBetEnabled(true);
+    document.getElementById("game_status").textContent =
+        "Choose a version and bet, then select Start Game.";
 }
 
 /**
  * Initializes the game buttons.
  */
 function buttonsInitialization() {
+    playerTurnActive = true;
     document.getElementById('card').disabled = false; // Enables the button to draw a card
     document.getElementById('stand').disabled = false; // Enables the button to stand
     document.getElementById('new_game').disabled = true; // Disables the button for a new game
+    document.getElementById('new_game').textContent = "Game in Progress";
+    document.getElementById('blackjack_version').disabled = true;
 }
 
 /**
  * Finalizes the buttons after the game ends.
  */
 function finalizeButtons() {
+    playerTurnActive = false;
     //TODO: Reveal the dealer's hidden card if you hid it like you were supposed to.
 
     document.getElementById('card').disabled = true; // Disables the button to draw a card
     document.getElementById('stand').disabled = true; // Disables the button to stand
     document.getElementById('new_game').disabled = false; // Enables the button for a new game
+    document.getElementById('new_game').textContent = "New Game";
+    document.getElementById('blackjack_version').disabled = false;
+}
+
+function synchronizeGameButtons() {
+    const state = game.getGameState();
+    const gameEnded = state.gameEnded;
+    if (gameEnded) {
+        finalizeButtons();
+        setBetEnabled(true);
+        return state;
+    }
+
+    const playerCanAct = playerTurnActive && !game.dealerTurn;
+    document.getElementById('card').disabled = !playerCanAct;
+    document.getElementById('stand').disabled = !playerCanAct;
+    document.getElementById('new_game').disabled = true;
+    document.getElementById('blackjack_version').disabled = true;
+    setBetEnabled(!playerCanAct);
+    return state;
 }
 
 //TODO: Implement this method.
@@ -50,11 +100,30 @@ function clearPage() {
  */
 function newGame() {
     clearPage();
+    updateBalance();
 
-    game = new Blackjack();
+    const version = Number(document.getElementById("blackjack_version").value);
+    document.getElementById("game_title").textContent = `Blackjack ${version}`;
+
+    const betInput = document.getElementById("bet");
+    const bet = Number(betInput.value);
+    if (!Number.isSafeInteger(bet) || bet < 1 || bet > balance) {
+        document.getElementById("game_status").textContent =
+            "Escolhe uma aposta válida, entre 1 € e o teu saldo.";
+        document.getElementById("new_game").disabled = false;
+        setBetEnabled(true);
+        document.getElementById("blackjack_version").disabled = false;
+        return;
+    }
+
+    currentBet = bet;
+    balance -= currentBet;
+    updateBalance();
+    setBetEnabled(false);
+
+    game = new Blackjack(version);
     currentGameCounted = false;
     buttonsInitialization();
-    debug(game);
 
     // 2 cartas dealer, 2 cartas player (regra do enunciado: dealer 2, player 1 mínimo)
     let state;
@@ -84,7 +153,9 @@ function finalScore(state) {
     let msg = `Dealer: ${dealerPoints} | Player: ${playerPoints} — `;
 
     if (state.playerWon && !state.dealerWon) {
-        msg += "Player wins!";
+        msg += state.naturalBlackjack
+            ? "Blackjack! Player wins with a natural 21!"
+            : "Player wins!";
     } else if (state.dealerWon && !state.playerWon) {
         msg += "Dealer wins!";
     } else if (!state.playerWon && !state.dealerWon && state.gameEnded) {
@@ -95,8 +166,15 @@ function finalScore(state) {
 
     document.getElementById('game_status').innerHTML = msg;
     if (!currentGameCounted) {
+        if (state.playerWon) {
+            balance += currentBet * (state.naturalBlackjack ? 3 : 2);
+        } else if (!state.dealerWon) {
+            balance += currentBet;
+        }
+        updateBalance();
         updateStats(state);
         currentGameCounted = true;
+        setBetEnabled(true);
     }
 }
 
@@ -107,11 +185,12 @@ function finalScore(state) {
  * @param {Object} state - The current state of the game.
  */
 function updateDealer(state) {
+    state = synchronizeGameButtons();
     const dealerElem = document.getElementById('dealer');
     dealerElem.innerHTML = "";
 
     const cards = game.getDealerCards();
-    const BACK_CARD = "img/png/red_joker.png";
+    const BACK_CARD = "img/png/card_back.png";
     // primeira carta sempre visível
     printCard(dealerElem, cards[0]);
 
@@ -141,7 +220,6 @@ function updateDealer(state) {
     }
 
     if (state.gameEnded) {
-        finalizeButtons();
         finalScore(state);
     }
 }
@@ -154,6 +232,7 @@ function updateDealer(state) {
  * @param {Object} state - The current state of the game.
  */
 function updatePlayer(state) {
+    state = synchronizeGameButtons();
     const playerElem = document.getElementById('player');
     playerElem.innerHTML = "";
 
@@ -166,7 +245,6 @@ function updatePlayer(state) {
         game.getCardsValue(cards);
 
     if (state.gameEnded) {
-        finalizeButtons();
         finalScore(state);
     }
 }
@@ -181,7 +259,6 @@ function updatePlayer(state) {
 function dealerNewCard() {
     const state = game.dealerMove();
     updateDealer(state);
-    debug(game);
     return state;
 }
 
@@ -194,7 +271,6 @@ function dealerNewCard() {
 function playerNewCard() {
     const state = game.playerMove();
     updatePlayer(state);
-    debug(game);
     return state;
 }
 
@@ -204,9 +280,20 @@ function playerNewCard() {
  * Finishes the dealer's turn.
  */
 function dealerFinish() {
+    if (!game || !playerTurnActive || game.state.gameEnded) {
+        return;
+    }
+
+    playerTurnActive = false;
     game.setDealerTurn(true);
 
     let state = game.getGameState();
+    if (state.gameEnded) {
+        updateDealer(state);
+        return;
+    }
+
+    synchronizeGameButtons();
     while (!state.gameEnded) {
         state = dealerNewCard();
     }
