@@ -1,24 +1,14 @@
-// Blackjack object
-
-/**
- * Class that represents the Blackjack game.
- */
 class Card {
     constructor(suit, value) {
-        this.suit = suit;   // 0–3
-        this.value = value; // 1–13
+        this.suit = suit;
+        this.value = value;
     }
 }
 
 class Blackjack {
-    // Constant that defines the maximum points to avoid busting in Blackjack
     static MAX_POINTS = 25;
-    // Constant that defines the point threshold at which the dealer must stand
     static DEALER_MAX_TURN_POINTS = 21;
 
-    /**
-     * Creates an instance of Blackjack and initializes the deck.
-     */
     constructor(version = Blackjack.MAX_POINTS) {
         if (version !== 21 && version !== Blackjack.MAX_POINTS) {
             throw new RangeError("A versão deve ser Blackjack 21 ou Blackjack 25.");
@@ -26,52 +16,31 @@ class Blackjack {
 
         this.maxPoints = version;
         this.dealerMaxTurnPoints = version === 21 ? 17 : Blackjack.DEALER_MAX_TURN_POINTS;
-        this.dealerCards = []; // Array to hold the dealer's cards
-        this.playerCards = []; // Array to hold the player's cards
-        this.dealerTurn = false; // Flag to indicate if it's the dealer's turn to play
-
-        // State of the game with information about the outcome
+        this.dealerCards = [];
+        this.playerCards = [];
+        this.dealerTurn = false;
         this.state = {
-            gameEnded: false, // Indicates whether the game has ended
-            playerWon: false, // Indicates if the player has won
-            dealerWon: false, // Indicates if the dealer has won
-            playerBusted: false, // Indicates if the player has exceeded MAX_POINTS
-            dealerBusted: false, // Indicates if the dealer has exceeded MAX_POINTS
+            gameEnded: false,
+            playerWon: false,
+            dealerWon: false,
+            playerBusted: false,
+            dealerBusted: false,
             naturalBlackjack: false
         };
 
-        // Initialize the deck of cards
-        this.deck = this.shuffle(this.newDeck()); // Create and shuffle a new deck
+        this.deck = this.shuffle(this.newDeck());
     }
-
-    //TODO: Implement this method
-    /**
-     * Creates a new deck of cards.
-     * @returns {Card[]} - An array of cards.
-     */
-    
 
     newDeck() {
         const deck = [];
-        const suits = [0, 1, 2, 3]; // 4 naipes
-
-        for (let s of suits) {
-            for (let v = 1; v <= 13; v++) {
-                deck.push(new Card(s, v));
+        for (let suit = 0; suit < 4; suit++) {
+            for (let value = 1; value <= 13; value++) {
+                deck.push(new Card(suit, value));
             }
         }
         return deck;
     }
 
-
-
-
-    //TODO: Implement this method
-    /**
-     * Shuffles the deck of cards.
-     * @param {Card[]} deck - The deck of cards to be shuffled.
-     * @returns {Card[]} - The shuffled deck.
-     */
     shuffle(deck) {
         for (let i = deck.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -80,42 +49,23 @@ class Blackjack {
         return deck;
     }
 
-
-    /**
-     * Returns the dealer's cards.
-     * @returns {Card[]} - An array containing the dealer's cards.
-     */
     getDealerCards() {
-        return this.dealerCards.slice(); // Return a copy of the dealer's cards
+        return this.dealerCards.slice();
     }
 
-    /**
-     * Returns the player's cards.
-     * @returns {Card[]} - An array containing the player's cards.
-     */
     getPlayerCards() {
-        return this.playerCards.slice(); // Return a copy of the player's cards
+        return this.playerCards.slice();
     }
 
-    /**
-     * Sets whether it is the dealer's turn to play.
-     * @param {boolean} val - Value indicating if it's the dealer's turn.
-     */
     setDealerTurn(val) {
-        this.dealerTurn = val; // Update the dealer's turn status
+        this.dealerTurn = val;
     }
 
-    //TODO: Implement this method
-    /**
-     * Calculates the total value of the provided cards.
-     * @param {Card[]} cards - Array of cards to be evaluated.
-     * @returns {number} - The total value of the cards.
-     */
     getCardsValue(cards) {
         let total = 0;
         let aces = 0;
 
-        for (let c of cards) {
+        for (const c of cards) {
             if (c.value === 1) {
                 aces++;
                 total += 1; 
@@ -126,7 +76,6 @@ class Blackjack {
             }
         }
 
-        // tenta transformar Ás de 1 → 11
         while (aces > 0 && total + 10 <= this.maxPoints) {
             total += 10;
             aces--;
@@ -135,44 +84,22 @@ class Blackjack {
         return total;
     }
     
-
-
-    //TODO: Implement this method
-    /**
-     * Executes the dealer's move by adding a card to the dealer's array.
-     * @returns {Object} - The game state after the dealer's move.
-     */
-
-
     dealerMove() {
-        const card = this.deck.pop();   // tira carta do topo
-        this.dealerCards.push(card);    // adiciona ao dealer
+        const card = this.deck.pop();
+        this.dealerCards.push(card);
         return this.getGameState();
     }
 
-
-    //TODO: Implement this method
-    /**
-     * Executes the player's move by adding a card to the player's array.
-     * @returns {Object} - The game state after the player's move.
-     */
     playerMove() {
-        const card = this.deck.pop();   // tira carta do topo
-        this.playerCards.push(card);    // adiciona ao jogador
+        const card = this.deck.pop();
+        this.playerCards.push(card);
         return this.getGameState();
     }
 
-
-    //TODO: Implement this method
-    /**
-     * Checks the game state based on the dealer's and player's cards.
-     * @returns {Object} - The updated game state.
-     */
     getGameState() {
         const playerPoints = this.getCardsValue(this.playerCards);
         const dealerPoints = this.getCardsValue(this.dealerCards);
 
-        // reset
         this.state.gameEnded = false;
         this.state.playerWon = false;
         this.state.dealerWon = false;
@@ -180,7 +107,6 @@ class Blackjack {
         this.state.dealerBusted = false;
         this.state.naturalBlackjack = false;
 
-        // Reaching the selected target wins immediately.
         if (playerPoints === this.maxPoints) {
             this.state.gameEnded = true;
             this.state.playerWon = true;
@@ -189,7 +115,6 @@ class Blackjack {
             return this.state;
         }
 
-        // 2) Jogador rebenta
         if (playerPoints > this.maxPoints) {
             this.state.gameEnded = true;
             this.state.playerBusted = true;
@@ -197,12 +122,10 @@ class Blackjack {
             return this.state;
         }
 
-        // Se ainda é turno do jogador → não avaliar dealer
         if (!this.dealerTurn) {
             return this.state;
         }
 
-        // 3) Dealer rebenta
         if (dealerPoints > this.maxPoints) {
             this.state.gameEnded = true;
             this.state.dealerBusted = true;
@@ -210,7 +133,6 @@ class Blackjack {
             return this.state;
         }
 
-        // Dealer stands at the threshold for the selected version.
         if (dealerPoints >= this.dealerMaxTurnPoints) {
 
             this.state.gameEnded = true;
@@ -220,7 +142,6 @@ class Blackjack {
             } else if (dealerPoints < playerPoints) {
                 this.state.playerWon = true;
             } else {
-                // 5) Empate
                 this.state.playerWon = false;
                 this.state.dealerWon = false;
             }
